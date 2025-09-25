@@ -1,0 +1,11 @@
+services:
+  fastapi_skeleton:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: thet4/fastapi_skeleton:dev
+    container_name: fastapi_skeleton
+    environment:
+      - ROLE=default
+    ports:
+      - "8000:8000"

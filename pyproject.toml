@@ -1,0 +1,21 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[project]
+name = "app"
+version = "0.0.0"
+description = "An ETL service which consumes file paths to parse tag according to rules"
+authors = [{name = "Tom Vautray"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.117.1"
+uvicorn = "^0.37.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^22.3.0"
+mypy = "^0.931"
+isort = "^5.10.1"
+flake8 = "^5.0.4"
+commitizen = "^0.9.2"
