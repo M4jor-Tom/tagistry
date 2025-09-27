@@ -1,2 +1,2 @@
 v1_strip: str = "/v1"
-example_strip: str = "/example"
+send_content_file_parent_dir_strip: str = "/send_content_file_parent_dir"
