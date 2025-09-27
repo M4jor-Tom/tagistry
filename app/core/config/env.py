@@ -21,6 +21,13 @@ class Env:
             self.get_enum("PROFILE", default.value, Profile.get_available_profiles()))
 
     @staticmethod
+    def get_list(key: str, default: str | None = None, separator: str = ":") -> tuple[str, ...]:
+        value = os.getenv(key, default)
+        if value is None:
+            raise ValueError(f"Missing env var: {key}")
+        return tuple(value.split(separator))
+
+    @staticmethod
     def get_enum(key: str, default: str, options: list[str]) -> str:
         value = os.getenv(key, default)
         if value is None:
