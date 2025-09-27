@@ -1,9 +1,10 @@
 #!/bin/bash
 
-export ROLE=$1
-export PROFILE=DEV
+export ROLE="$1"
+export PROFILE="DEV"
+export LOGGING_LEVEL="DEBUG"
 if [[ $ROLE == "" ]]; then
-    export ROLE=default
+    export ROLE="default"
 fi
 if [[ $PROFILE != "" ]] && [[ $ROLE != "" ]]; then
   cd app
