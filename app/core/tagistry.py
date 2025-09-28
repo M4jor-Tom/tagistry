@@ -7,6 +7,7 @@ from api.v1 import v1_router
 from core.config import PROFILE, ROLE, APP_NAME
 
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("🚀 {} is starting with profile [{}] and role [{}]", APP_NAME.capitalize(), PROFILE.value, ROLE.value)
