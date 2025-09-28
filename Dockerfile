@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxcomposite1 \
     libxdamage1 \
     libxi6 \
+    tini \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --upgrade pip --no-cache-dir \
@@ -47,4 +48,5 @@ ENV PROFILE=PROD
 ENV APP_HOST=0.0.0.0
 
 # ───────────── Entrypoint ─────────────
+ENTRYPOINT ["tini", "--"]
 CMD ["/root/.local/bin/poetry", "run", "python", "main.py"]
