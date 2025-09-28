@@ -3,4 +3,4 @@ from core.config import setup_logging, LOGGING_LEVEL, APP_HOST, APP_PORT
 if __name__ == "__main__":
     import uvicorn
     setup_logging(LOGGING_LEVEL)
-    uvicorn.run("core.fastapi_skeleton:app", host=APP_HOST, port=APP_PORT, reload=False, workers=1)
+    uvicorn.run("core.tagistry:app", host=APP_HOST, port=APP_PORT, reload=False, workers=1)
