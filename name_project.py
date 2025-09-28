@@ -1,6 +1,5 @@
-import os
-import re
 import fileinput
+import os
 import sys
 
 OLD_STRING = "fastapi_skeleton"
