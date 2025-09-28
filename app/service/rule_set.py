@@ -3,6 +3,8 @@ from pathlib import Path
 from exception import RuleSetElementPathDoesNotExist
 from model.domain import Tag
 
+from loguru import logger
+
 
 class RuleSetService:
     tags: list[Tag]
@@ -26,6 +28,25 @@ class RuleSetService:
         return rule_set_element
 
     @staticmethod
+    def build_tags_from_tags_categories(tags: dict[str, Tag], tags_categories: dict[str, list[str]]) -> dict[str, Tag]:
+        for tag_category in tags_categories:
+            for tag_value in tags_categories[tag_category]:
+                tags[tag_value] = Tag(
+                    category=tag_category,
+                    value=tag_value,
+                    parent_tags=[]
+                )
+        return tags
+
+    @staticmethod
+    def update_tags_from_tags_inheritances(tags: dict[str, Tag], tags_inheritance: dict[str, list[str]]) -> dict[
+        str, Tag]:
+        for father_tag_value in tags_inheritance:
+            for son_tag_value in tags_inheritance[father_tag_value]:
+                tags[son_tag_value].parent_tags.append(tags[father_tag_value])
+        return tags
+
+    @staticmethod
     def build_tags_from_dir(rule_set_dir: str, banned_strips: tuple[str, ...]) -> list[Tag]:
         tags: dict[str, Tag] = {}
         tags_categories: dict[str, list[str]] = RuleSetService.build_rule_set_element_from_dir(
@@ -34,16 +55,8 @@ class RuleSetService:
         tags_inheritance: dict[str, list[str]] = RuleSetService.build_rule_set_element_from_dir(
             f"{rule_set_dir}/tags-inheritance",
             banned_strips)
-        for tag_category in tags_categories:
-            for tag_value in tags_categories[tag_category]:
-                tags[tag_value] = Tag(
-                    category=tag_category,
-                    value=tag_value,
-                    parent_tags=[]
-                )
-        for father_tag_value in tags_inheritance:
-            for son_tag_value in tags_inheritance[father_tag_value]:
-                tags[son_tag_value].parent_tags.append(tags[father_tag_value])
+        tags = RuleSetService.build_tags_from_tags_categories(tags, tags_categories)
+        tags = RuleSetService.update_tags_from_tags_inheritances(tags, tags_inheritance)
         return list(tags.values())
 
     def import_rule_set(self, rule_set_dir: str, banned_strips: tuple[str, ...]) -> None:
