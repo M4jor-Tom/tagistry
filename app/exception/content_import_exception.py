@@ -1,12 +1,9 @@
-class TagsSanitizingException(Exception):
-    reason: str
+from exception import DomainException
+
+class ContentImportException(DomainException):
     path: str
 
-    def __init__(self, path: str):
-        self.path = path
-
-
-class FileNameWithoutSpaces(TagsSanitizingException):
+class FileNameWithoutSpaces(ContentImportException):
     reason = "tags part must have a space with the content title "
     "('<tags> <file_name>' instead of '<tags><file_name>')"
 
@@ -14,7 +11,7 @@ class FileNameWithoutSpaces(TagsSanitizingException):
         super().__init__(path)
 
 
-class UntaggedContentFile(TagsSanitizingException):
+class UntaggedContentFile(ContentImportException):
     reason = "content file is untagged"
 
     def __init__(self, path: str):
