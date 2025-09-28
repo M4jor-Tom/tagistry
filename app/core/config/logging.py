@@ -1,16 +1,19 @@
-from logging.config import dictConfig
+import sys
+
+from loguru import logger
 
 
 def setup_logging(log_level: str) -> None:
-    """Set up logging configuration for the entire application."""
-    dictConfig({
-        "version": 1,
-        "disable_existing_loggers": False,
-        "loggers": {
-            "core": {
-                "level": log_level,
-                "handlers": [],
-                "propagate": False,
-            },
-        },
-    })
+    logger.remove()
+    logger.add(sys.stdout,
+               level=log_level,
+               format=(
+                   "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+                   "<level>{level: <8}</level> | "
+                   "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - "
+                   "<level>{message}</level>"
+               ),
+               colorize=True,
+               enqueue=True,
+               backtrace=True,
+               diagnose=True)
