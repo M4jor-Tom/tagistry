@@ -4,8 +4,7 @@ from fastapi import FastAPI
 from loguru import logger
 
 from api.v1 import v1_router
-from core.config import PROFILE, ROLE
-from core.config.config import APP_NAME
+from core.config import PROFILE, ROLE, APP_NAME
 
 
 @asynccontextmanager
