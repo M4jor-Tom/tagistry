@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from exception import RuleSetElementPathDoesNotExist
+from exception import RuleSetElementPathDoesNotExist, InconsistentRuleSetException, RuleSetImportException
 from model.domain import Tag
 
 from loguru import logger
@@ -47,6 +47,24 @@ class RuleSetService:
         return tags
 
     @staticmethod
+    def sanitize_ruleset_consistency(tags: dict[str, Tag], categories_inheritance: dict[str, list[str]]) -> None:
+        inconsistent_tags_with_intended_category: list[tuple[str, list[str]]] = []
+        for tag in tags.values():
+            any_parent_tag_has_right_category: bool = False
+            tag_category_should_have_parents: bool = tag.category in categories_inheritance
+            if tag_category_should_have_parents:
+                tag_parent_categories: list[str] = [parent_tag.category for parent_tag in tag.parent_tags]
+                for tag_parent_category in tag_parent_categories:
+                    parent_tag_has_right_category: bool = tag_parent_category in categories_inheritance[tag.category]
+                    any_parent_tag_has_right_category = parent_tag_has_right_category or \
+                                                        any_parent_tag_has_right_category
+                if not any_parent_tag_has_right_category:
+                    inconsistent_tags_with_intended_category.append(
+                        tuple[str, list[str]]([tag.value, categories_inheritance[tag.category]]))
+        if len(inconsistent_tags_with_intended_category) > 0:
+            raise InconsistentRuleSetException(inconsistent_tags_with_intended_category)
+
+    @staticmethod
     def build_tags_from_dir(rule_set_dir: str, banned_strips: tuple[str, ...]) -> list[Tag]:
         tags: dict[str, Tag] = {}
         tags_categories: dict[str, list[str]] = RuleSetService.build_rule_set_element_from_dir(
@@ -55,9 +73,16 @@ class RuleSetService:
         tags_inheritance: dict[str, list[str]] = RuleSetService.build_rule_set_element_from_dir(
             f"{rule_set_dir}/tags-inheritance",
             banned_strips)
+        categories_inheritance: dict[str, list[str]] = RuleSetService.build_rule_set_element_from_dir(
+            f"{rule_set_dir}/categories-inheritance",
+            banned_strips)
         tags = RuleSetService.build_tags_from_tags_categories(tags, tags_categories)
         tags = RuleSetService.update_tags_from_tags_inheritances(tags, tags_inheritance)
+        RuleSetService.sanitize_ruleset_consistency(tags, categories_inheritance)
         return list(tags.values())
 
     def import_rule_set(self, rule_set_dir: str, banned_strips: tuple[str, ...]) -> None:
-        self.tags = RuleSetService.build_tags_from_dir(rule_set_dir, banned_strips)
+        try:
+            self.tags = RuleSetService.build_tags_from_dir(rule_set_dir, banned_strips)
+        except RuleSetImportException as e:
+            logger.warning(e.get_details())
