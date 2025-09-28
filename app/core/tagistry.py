@@ -8,6 +8,7 @@ from rest import health_router
 from rest.api import api_router
 
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("🚀 {} is starting with profile [{}] and role [{}]", APP_NAME.capitalize(), PROFILE.value, ROLE.value)
