@@ -7,7 +7,7 @@ if [[ $ROLE == "" ]]; then
     export ROLE="default"
 fi
 if [[ $PROFILE != "" ]] && [[ $ROLE != "" ]]; then
-  cd app
+  cd app || exit 1
   poetry run python main.py
   exit 0
 else
