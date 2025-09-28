@@ -1,10 +1,21 @@
 class TagsSanitizingException(Exception):
     reason: str
+    path: str
 
-    def __init__(self, reason: str):
-        self.reason = reason
+    def __init__(self, path: str):
+        self.path = path
 
 
-class TagsFileNamePartNotFound(TagsSanitizingException):
-    def __init__(self):
-        super().__init__("tags part in file name not found")
+class FileNameWithoutSpaces(TagsSanitizingException):
+    reason = "tags part must have a space with the content title "
+    "('<tags> <file_name>' instead of '<tags><file_name>')"
+
+    def __init__(self, path: str):
+        super().__init__(path)
+
+
+class UntaggedContentFile(TagsSanitizingException):
+    reason = "content file is untagged"
+
+    def __init__(self, path: str):
+        super().__init__(path)

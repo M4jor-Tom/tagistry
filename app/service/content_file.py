@@ -3,25 +3,33 @@ from pathlib import Path
 
 from loguru import logger
 
-from exception import TagsSanitizingException, TagsFileNamePartNotFound
+from exception import TagsSanitizingException, FileNameWithoutSpaces, UntaggedContentFile
 from model.domain import ContentFile
 
 
 class ContentFileService:
     content_files: list[ContentFile]
     found_tags: set[str]
+    exceptions_summary: dict[type[TagsSanitizingException], list[TagsSanitizingException]]
 
     def __init__(self):
         self.content_files = []
         self.found_tags = set()
+        self.exceptions_summary = {}
 
-    def sanitize_tags(self, file_name: str) -> list[str]:
+    def handle_tag_sanitizing_exception(self, exception: TagsSanitizingException):
+        exception_type: type[TagsSanitizingException] = type(exception)
+        if exception_type not in self.exceptions_summary:
+            self.exceptions_summary[exception_type] = []
+        self.exceptions_summary[exception_type].append(exception)
+
+    def sanitize_tags(self, path: str, file_name: str) -> list[str]:
         file_name_split: list[str] = file_name.split(" ")
         if len(file_name_split) < 1:
-            raise TagsFileNamePartNotFound()
+            raise FileNameWithoutSpaces(path)
         tags_part: str = file_name_split[0]
         if "{" not in tags_part and "}" not in tags_part:
-            raise TagsFileNamePartNotFound()
+            raise UntaggedContentFile(path)
         tags: list[str] = tags_part.lstrip("{").rstrip("}").split("}{")
         for tag in tags:
             self.found_tags.add(tag)
@@ -30,7 +38,7 @@ class ContentFileService:
     def build_content_file(self, path: str, content_hash: str | None) -> ContentFile:
         path_split: list[str] = path.split('/')
         base_name: str = path_split[-1] if len(path_split) > 1 else path
-        logger.debug(self.sanitize_tags(base_name))
+        logger.debug(self.sanitize_tags(path, base_name))
         return ContentFile(path=path, content_hash=content_hash)
 
     @staticmethod
@@ -72,5 +80,9 @@ class ContentFileService:
                         relative_path: str = relative_file_split[1]
                         self.input_content_file(relative_path.lstrip('/'), path, compute_hash)
             except TagsSanitizingException as e:
-                logger.error(f"Refused path {str(path)} for {e.reason}")
+                self.handle_tag_sanitizing_exception(e)
+
+        for exception_type in self.exceptions_summary:
+            occurrences_list: list[TagsSanitizingException] = self.exceptions_summary[exception_type]
+            logger.error("Refused {} paths for {}", len(occurrences_list), exception_type.reason)
         logger.debug("found_tags: {}", self.found_tags)
