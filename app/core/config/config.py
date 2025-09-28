@@ -1,8 +1,9 @@
-from core.config import Env
-from core.model.env import Role, Profile
+from .env import Env
+from model.env import Role, Profile
 
 env = Env()
 
+APP_NAME: str = "fastapi_skeleton"
 ROLE: Role = env.get_role(Role.default)
 PROFILE: Profile = env.get_profile(Profile.PROD)
 APP_HOST: str = env.get("APP_HOST", "127.0.0.1")
