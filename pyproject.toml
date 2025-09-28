@@ -4,17 +4,17 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 authors = [{ name = "Tom Vautray" }]
-description = ""
-name = "fastapi_skeleton"
-version = "0.0.1-pre"
+description = "An ETL service which consumes file paths to parse tag according to rules"
+name = "tagistry"
+version = "0.1.0-alpha"
 readme = "README.md"
 requires-python = ">=3.12"
 
 [tool.poetry]
 authors = ["Tom Vautray"]
-description = ""
-name = "fastapi_skeleton"
-version = "0.0.1-pre"
+description = "An ETL service which consumes file paths to parse tag according to rules"
+name = "tagistry"
+version = "0.1.0-alpha"
 packages = [{ include = "app" }]
 
 [tool.poetry.dependencies]
