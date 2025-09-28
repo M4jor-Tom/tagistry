@@ -3,22 +3,22 @@ from pathlib import Path
 
 from loguru import logger
 
-from exception import TagsSanitizingException, FileNameWithoutSpaces, UntaggedContentFile
+from exception import ContentImportException, FileNameWithoutSpaces, UntaggedContentFile
 from model.domain import ContentFile
 
 
 class ContentFileService:
     content_files: list[ContentFile]
     found_tags: set[str]
-    exceptions_summary: dict[type[TagsSanitizingException], list[TagsSanitizingException]]
+    exceptions_summary: dict[type[ContentImportException], list[ContentImportException]]
 
     def __init__(self):
         self.content_files = []
         self.found_tags = set()
         self.exceptions_summary = {}
 
-    def handle_tag_sanitizing_exception(self, exception: TagsSanitizingException):
-        exception_type: type[TagsSanitizingException] = type(exception)
+    def handle_content_import_exception(self, exception: ContentImportException):
+        exception_type: type[ContentImportException] = type(exception)
         if exception_type not in self.exceptions_summary:
             self.exceptions_summary[exception_type] = []
         self.exceptions_summary[exception_type].append(exception)
@@ -79,10 +79,10 @@ class ContentFileService:
                     if len(relative_file_split) == 2:
                         relative_path: str = relative_file_split[1]
                         self.input_content_file(relative_path.lstrip('/'), path, compute_hash)
-            except TagsSanitizingException as e:
-                self.handle_tag_sanitizing_exception(e)
+            except ContentImportException as e:
+                self.handle_content_import_exception(e)
 
         for exception_type in self.exceptions_summary:
-            occurrences_list: list[TagsSanitizingException] = self.exceptions_summary[exception_type]
+            occurrences_list: list[ContentImportException] = self.exceptions_summary[exception_type]
             logger.error("Refused {} paths for {}", len(occurrences_list), exception_type.reason)
         logger.debug("found_tags: {}", self.found_tags)
