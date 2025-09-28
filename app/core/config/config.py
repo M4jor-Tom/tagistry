@@ -3,7 +3,7 @@ from model.env import Role, Profile
 
 env = Env()
 
-APP_NAME: str = "fastapi_skeleton"
+APP_NAME: str = "tagistry"
 ROLE: Role = env.get_role(Role.default)
 PROFILE: Profile = env.get_profile(Profile.PROD)
 APP_HOST: str = env.get("APP_HOST", "127.0.0.1")

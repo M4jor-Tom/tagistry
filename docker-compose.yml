@@ -1,10 +1,10 @@
 services:
-  fastapi_skeleton:
+  tagistry:
     build:
       context: .
       dockerfile: Dockerfile
-    image: thet4/fastapi_skeleton:dev
-    container_name: fastapi_skeleton
+    image: thet4/tagistry:dev
+    container_name: tagistry
     environment:
       - ROLE=default
     ports:
