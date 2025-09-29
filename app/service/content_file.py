@@ -4,19 +4,22 @@ from pathlib import Path
 
 from loguru import logger
 
-from exception import ContentImportException, FileNameWithoutSpaces, UntaggedContentFile
+from exception import ContentImportException, FileNameWithoutSpaces, UntaggedContentFile, TagNotAllowedException
 from model.domain import ContentFile
+from service import RuleSetService
 
 
 class ContentFileService:
     content_files: list[ContentFile]
-    found_tags: set[str]
+    all_found_tags: set[str]
     exceptions_summary: dict[type[ContentImportException], list[ContentImportException]]
+    rule_set_service: RuleSetService
 
-    def __init__(self):
+    def __init__(self, rule_set_service: RuleSetService):
         self.content_files = []
-        self.found_tags = set()
+        self.all_found_tags = set()
         self.exceptions_summary = {}
+        self.rule_set_service = rule_set_service
 
     def handle_content_import_exception(self, exception: ContentImportException):
         exception_type: type[ContentImportException] = type(exception)
@@ -33,13 +36,23 @@ class ContentFileService:
         if len(tags) == 0:
             raise UntaggedContentFile(path)
         for tag in tags:
-            self.found_tags.add(tag)
+            self.all_found_tags.add(tag)
         return tags
+
+    def sanitize_all_content_files_tags(self) -> tuple[list[str], list[TagNotAllowedException]]:
+        allowed_tags: list[str] = []
+        tag_not_allowed_exceptions: list[TagNotAllowedException] = []
+        for found_tag in self.all_found_tags:
+            if found_tag in self.rule_set_service.get_tags_values():
+                allowed_tags.append(found_tag)
+            else:
+                tag_not_allowed_exceptions.append(TagNotAllowedException(found_tag))
+        return allowed_tags, tag_not_allowed_exceptions
 
     def build_content_file(self, path: str, content_hash: str | None) -> ContentFile:
         path_split: list[str] = path.split('/')
         base_name: str = path_split[-1] if len(path_split) > 1 else path
-        logger.debug(self.sanitize_tags(path, base_name))
+        self.sanitize_tags(path, base_name)
         return ContentFile(path=path, content_hash=content_hash)
 
     @staticmethod
@@ -83,7 +96,13 @@ class ContentFileService:
             except ContentImportException as e:
                 self.handle_content_import_exception(e)
 
+        allowed_tags, tag_not_allowed_exceptions = self.sanitize_all_content_files_tags()
+
+        for tag_not_allowed_exception in tag_not_allowed_exceptions:
+            self.handle_content_import_exception(tag_not_allowed_exception)
+
         for exception_type in self.exceptions_summary:
             occurrences_list: list[ContentImportException] = self.exceptions_summary[exception_type]
             logger.error("Refused {} paths for {}", len(occurrences_list), exception_type.reason)
-        logger.debug("found_tags: {}", self.found_tags)
+            for exception in occurrences_list:
+                logger.warning(exception.get_details())
