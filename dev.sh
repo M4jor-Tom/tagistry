@@ -6,6 +6,9 @@ export LOGGING_LEVEL="DEBUG"
 if [[ $ROLE == "" ]]; then
     export ROLE="default"
 fi
+if [[ -f env.sh ]]; then
+  source env.sh
+fi
 if [[ $PROFILE != "" ]] && [[ $ROLE != "" ]]; then
   cd app || exit 1
   poetry run python main.py
