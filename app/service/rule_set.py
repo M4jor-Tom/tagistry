@@ -1,9 +1,9 @@
 from pathlib import Path
 
+from loguru import logger
+
 from exception import RuleSetElementPathDoesNotExist, InconsistentRuleSetException, RuleSetImportException
 from model.domain import Tag
-
-from loguru import logger
 
 
 class RuleSetService:
@@ -86,3 +86,6 @@ class RuleSetService:
             self.tags = RuleSetService.build_tags_from_dir(rule_set_dir, banned_strips)
         except RuleSetImportException as e:
             logger.warning(e.get_details())
+
+    def get_tags_values(self) -> list[str]:
+        return [rule_set_tag.value for rule_set_tag in self.tags]
