@@ -1,4 +1,5 @@
 import hashlib
+import re
 from pathlib import Path
 
 from loguru import logger
@@ -28,9 +29,9 @@ class ContentFileService:
         if len(file_name_split) < 1:
             raise FileNameWithoutSpaces(path)
         tags_part: str = file_name_split[0]
-        if "{" not in tags_part and "}" not in tags_part:
+        tags: list[str] = re.findall(r"{(\w+)}+", tags_part)
+        if len(tags) == 0:
             raise UntaggedContentFile(path)
-        tags: list[str] = tags_part.lstrip("{").rstrip("}").split("}{")
         for tag in tags:
             self.found_tags.add(tag)
         return tags
