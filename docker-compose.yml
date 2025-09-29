@@ -9,3 +9,6 @@ services:
       - ROLE=default
     ports:
       - "8000:8000"
+    volumes:
+      - ${DEFAULT_CONTENT_FILE_DIR}:/var/tagistry/content_files:ro
+      - ${DEFAULT_RULE_SET_DIR}:/var/tagistry/rule_set:ro
