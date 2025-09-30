@@ -7,10 +7,12 @@ class ContentImportException(DomainException):
     def __init__(self, path: str):
         self.path = path
 
+    def get_details(self) -> str:
+        return f"{self.reason}: {self.path}"
 
-class FileNameWithoutSpaces(ContentImportException):
-    reason = "tags part must have a space with the content title "
-    "('<tags> <file_name>' instead of '<tags><file_name>')"
+
+class FileNameWithoutSpacesException(ContentImportException):
+    reason = "tags part must have a space with the content title ('<tags> <file_name>' instead of '<tags><file_name>')"
 
 
 class TagNotAllowedException(ContentImportException):
@@ -24,7 +26,7 @@ class TagNotAllowedException(ContentImportException):
         return f"the following tag is unallowed: {self.unknown_tag}"
 
 
-class UntaggedContentFile(ContentImportException):
+class UntaggedContentFileException(ContentImportException):
     reason = "content file is untagged"
 
     def get_details(self) -> str:
