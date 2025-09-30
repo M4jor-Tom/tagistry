@@ -4,8 +4,9 @@ from pathlib import Path
 
 from loguru import logger
 
-from exception import ContentImportException, FileNameWithoutSpaces, UntaggedContentFile, TagNotAllowedException
-from model.domain import ContentFile
+from exception import ContentImportException, FileNameWithoutSpacesException, UntaggedContentFileException, \
+    TagNotAllowedException
+from model.domain import ContentFile, ContentValidationSummary
 from service import RuleSetService
 
 
@@ -30,11 +31,11 @@ class ContentFileService:
     def sanitize_tags(self, path: str, file_name: str) -> list[str]:
         file_name_split: list[str] = file_name.split(" ")
         if len(file_name_split) < 1:
-            raise FileNameWithoutSpaces(path)
+            raise FileNameWithoutSpacesException(path)
         tags_part: str = file_name_split[0]
         tags: list[str] = re.findall(r"{(\w+)}+", tags_part)
         if len(tags) == 0:
-            raise UntaggedContentFile(path)
+            raise UntaggedContentFileException(path)
         for tag in tags:
             self.all_found_tags.add(tag)
         return tags
@@ -85,7 +86,7 @@ class ContentFileService:
                             content_file_absolute_parent_dir: str,
                             banned_strips: tuple[str, ...],
                             compute_hash: bool
-                            ):
+                            ) -> ContentValidationSummary:
         for path in Path(content_file_absolute_parent_dir).rglob("*"):
             try:
                 if ContentFileService.is_path_to_take(path, banned_strips):
@@ -106,3 +107,9 @@ class ContentFileService:
             logger.error("Refused {} paths for {}", len(occurrences_list), exception_type.reason)
             for exception in occurrences_list:
                 logger.warning(exception.get_details())
+
+        exceptions: list[ContentImportException] = []
+        for exceptions_list in self.exceptions_summary.values():
+            for exception in exceptions_list:
+                exceptions.append(exception)
+        return ContentValidationSummary.build_from_exceptions(exceptions)
