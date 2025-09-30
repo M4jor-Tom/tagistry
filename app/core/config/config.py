@@ -9,7 +9,7 @@ PROFILE: Profile = env.get_profile(Profile.PROD)
 APP_HOST: str = env.get("APP_HOST", "127.0.0.1")
 APP_PORT: int = env.get_int("APP_PORT", 8000)
 LOGGING_LEVEL: str = env.get("LOGGING_LEVEL", "INFO")
-DEFAULT_CONTENT_FILE_PATH_BLACKLIST_STRIP: tuple[str, ...] = env.get_list("CONTENT_FILE_PATH_BLACKLIST_STRIP",
-                                                                  "@eaDir:.tar.gz:.sh:.git")
+DEFAULT_CONTENT_FILE_PATH_BLACKLIST_STRIP: tuple[str, ...] = env.get_list("DEFAULT_CONTENT_FILE_PATH_BLACKLIST_STRIP",
+                                                                          "@eaDir:.tar.gz:.sh:.git")
 DEFAULT_CONTENT_FILE_DIR: str = env.get("DEFAULT_CONTENT_FILE_DIR", "/var/tagistry/content_files")
 DEFAULT_RULE_SET_DIR: str = env.get("DEFAULT_RULE_SET_DIR", "/var/tagistry/rule_set")
