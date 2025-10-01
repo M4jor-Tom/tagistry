@@ -6,20 +6,20 @@ from loguru import logger
 
 from exception import ContentImportException, FileNameWithoutSpacesException, UntaggedContentFileException, \
     TagNotAllowedException
-from model.domain import ContentFile, ContentValidationSummary
+from model.domain import ContentFile
 from service import RuleSetService
 
 
 class ContentFileService:
     content_files: list[ContentFile]
     all_found_tags: set[str]
-    exceptions_summary: dict[type[ContentImportException], list[ContentImportException]]
     rule_set_service: RuleSetService
 
     def __init__(self, rule_set_service: RuleSetService):
         self.content_files = []
         self.all_found_tags = set()
         self.exceptions_summary = {}
+        self.content_validation_summary: dict[str, list[str]] = {}
         self.rule_set_service = rule_set_service
 
     def handle_content_import_exception(self, exception: ContentImportException):
@@ -27,6 +27,9 @@ class ContentFileService:
         if exception_type not in self.exceptions_summary:
             self.exceptions_summary[exception_type] = []
         self.exceptions_summary[exception_type].append(exception)
+        if exception.key not in self.content_validation_summary:
+            self.content_validation_summary[exception.key] = []
+        self.content_validation_summary[exception.key].append(exception.value)
 
     def sanitize_tags(self, path: str, file_name: str) -> list[str]:
         file_name_split: list[str] = file_name.split(" ")
@@ -86,7 +89,7 @@ class ContentFileService:
                             content_file_absolute_parent_dir: str,
                             banned_strips: tuple[str, ...],
                             compute_hash: bool
-                            ) -> ContentValidationSummary:
+                            ) -> dict[str, list[str]]:
         for path in Path(content_file_absolute_parent_dir).rglob("*"):
             try:
                 if ContentFileService.is_path_to_take(path, banned_strips):
@@ -107,9 +110,4 @@ class ContentFileService:
             logger.error("Refused {} paths for {}", len(occurrences_list), exception_type.reason)
             for exception in occurrences_list:
                 logger.warning(exception.get_details())
-
-        exceptions: list[ContentImportException] = []
-        for exceptions_list in self.exceptions_summary.values():
-            for exception in exceptions_list:
-                exceptions.append(exception)
-        return ContentValidationSummary.build_from_exceptions(exceptions)
+        return self.content_validation_summary
