@@ -109,5 +109,5 @@ class ContentFileService:
             occurrences_list: list[ContentImportException] = self.exceptions_summary[exception_type]
             logger.error("Refused {} paths for {}", len(occurrences_list), exception_type.reason)
             for exception in occurrences_list:
-                logger.warning(exception.get_details())
+                logger.warning(exception.details)
         return self.content_validation_summary

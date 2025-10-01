@@ -17,7 +17,7 @@ class RuleSetService:
         str, list[str]]:
         rule_set_element: dict[str, list[str]] = {}
         if not Path(rule_set_element_dir).exists():
-            raise RuleSetElementPathDoesNotExist(path=rule_set_element_dir)
+            raise RuleSetElementPathDoesNotExist(value=rule_set_element_dir)
         rule_set_element_sub_dirs: list[str] = [
             rule_set_sub_dir.name for rule_set_sub_dir in Path(rule_set_element_dir).iterdir()]
         for rule_set_element_file_name in rule_set_element_sub_dirs:
@@ -85,7 +85,7 @@ class RuleSetService:
         try:
             self.tags = RuleSetService.build_tags_from_dir(rule_set_dir, banned_strips)
         except RuleSetImportException as e:
-            logger.warning(e.get_details())
+            logger.warning(e.details)
 
     def get_tags_values(self) -> list[str]:
         return [rule_set_tag.value for rule_set_tag in self.tags]
