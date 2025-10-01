@@ -1,8 +1,10 @@
+from functools import cache
 from pathlib import Path
 
 from loguru import logger
 
-from exception import RuleSetElementPathDoesNotExist, InconsistentRuleSetException, RuleSetImportException
+from exception import RuleSetElementPathDoesNotExist, InconsistentRuleSetCategoryInheritanceException, \
+    RuleSetImportException, InheritanceTagsAbsentFromCategoriesTagsException
 from model.domain import Tag
 
 
@@ -39,11 +41,17 @@ class RuleSetService:
         return tags
 
     @staticmethod
-    def update_tags_from_tags_inheritances(tags: dict[str, Tag], tags_inheritance: dict[str, list[str]]) -> dict[
-        str, Tag]:
-        for father_tag_value in tags_inheritance:
-            for son_tag_value in tags_inheritance[father_tag_value]:
-                tags[son_tag_value].parent_tags.append(tags[father_tag_value])
+    def sanitize_and_update_tags_from_tags_inheritances(
+            tags: dict[str, Tag], tags_inheritance: dict[str, list[str]]) -> dict[str, Tag]:
+        absent_son_category_tags_from_inheritance_tags: set[str] = set[str]()
+        for parent_tag_value in tags_inheritance:
+            for son_tag_value in tags_inheritance[parent_tag_value]:
+                if son_tag_value not in tags:
+                    absent_son_category_tags_from_inheritance_tags.add(son_tag_value)
+                elif parent_tag_value in tags:
+                    tags[son_tag_value].parent_tags.append(tags[parent_tag_value])
+        if len(absent_son_category_tags_from_inheritance_tags) > 0:
+            raise InheritanceTagsAbsentFromCategoriesTagsException(f"{absent_son_category_tags_from_inheritance_tags}")
         return tags
 
     @staticmethod
@@ -62,7 +70,7 @@ class RuleSetService:
                     inconsistent_tags_with_intended_category.append(
                         tuple[str, list[str]]([tag.value, categories_inheritance[tag.category]]))
         if len(inconsistent_tags_with_intended_category) > 0:
-            raise InconsistentRuleSetException(inconsistent_tags_with_intended_category)
+            raise InconsistentRuleSetCategoryInheritanceException(inconsistent_tags_with_intended_category)
 
     @staticmethod
     def build_tags_from_dir(rule_set_dir: str, banned_strips: tuple[str, ...]) -> list[Tag]:
@@ -77,15 +85,17 @@ class RuleSetService:
             f"{rule_set_dir}/categories-inheritance",
             banned_strips)
         tags = RuleSetService.build_tags_from_tags_categories(tags, tags_categories)
-        tags = RuleSetService.update_tags_from_tags_inheritances(tags, tags_inheritance)
+        tags = RuleSetService.sanitize_and_update_tags_from_tags_inheritances(tags, tags_inheritance)
         RuleSetService.sanitize_ruleset_consistency(tags, categories_inheritance)
         return list(tags.values())
 
     def import_rule_set(self, rule_set_dir: str, banned_strips: tuple[str, ...]) -> None:
         try:
+            self.get_tags_values.cache_clear()
             self.tags = RuleSetService.build_tags_from_dir(rule_set_dir, banned_strips)
         except RuleSetImportException as e:
-            logger.warning(e.details)
+            logger.warning(e.get_details())
 
+    @cache
     def get_tags_values(self) -> list[str]:
         return [rule_set_tag.value for rule_set_tag in self.tags]
