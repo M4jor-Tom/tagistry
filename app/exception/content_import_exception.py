@@ -21,4 +21,4 @@ class UntaggedContentFileException(ContentImportException):
 
 class MissingParentTagValueException(ContentImportException):
     key = "missing_parent_tag"
-    reason = None
+    reason = "parent tag(s) missing from file name"
