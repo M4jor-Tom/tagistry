@@ -40,7 +40,7 @@ class ContentFileService:
             self.parsed_tag_values.add(tag)
         return tags
 
-    def sanitize_all_content_files_tags(self) -> tuple[list[str], list[TagNotAllowedException]]:
+    def check_disallowed_tags_amongst_content_files(self) -> tuple[list[str], list[TagNotAllowedException]]:
         allowed_tag_values: list[str] = []
         tag_value_not_allowed_exceptions: list[TagNotAllowedException] = []
         for found_tag in self.parsed_tag_values:
@@ -116,7 +116,7 @@ class ContentFileService:
             except ContentImportException as e:
                 self._handle_content_import_exception(e)
 
-        allowed_tag_values, tag_value_not_allowed_exceptions = self.sanitize_all_content_files_tags()
+        allowed_tag_values, tag_value_not_allowed_exceptions = self.check_disallowed_tags_amongst_content_files()
 
         for tag_not_allowed_exception in tag_value_not_allowed_exceptions:
             self._handle_content_import_exception(tag_not_allowed_exception)
