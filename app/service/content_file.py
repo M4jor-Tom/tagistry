@@ -54,7 +54,8 @@ class ContentFileService:
         path_split: list[str] = path.split('/')
         base_name: str = path_split[-1] if len(path_split) > 1 else path
         tag_values: list[str] = self.sanitize_tags(path, base_name)
-        result: ContentFile = ContentFile(path=path, content_hash=content_hash, tag_values=tag_values)
+        result: ContentFile = ContentFile(
+            path=path, content_hash=content_hash, tag_values=tag_values, missing_tag_values=[])
         return result
 
     @staticmethod
@@ -110,19 +111,17 @@ class ContentFileService:
         for tag_not_allowed_exception in tag_value_not_allowed_exceptions:
             self._handle_content_import_exception(tag_not_allowed_exception)
 
-        tags_which_each_content_file_misses: dict[str, list[str]] = {}
         for content_file in self.content_files:
-            tags_which_each_content_file_misses[content_file.path] = []
             for content_file_tag_value in content_file.tag_values:
                 if content_file_tag_value in self.rule_set_service.tags:
                     content_file_tag: Tag = self.rule_set_service.tags[content_file_tag_value]
                     for parent_tag in content_file_tag.parent_tags:
                         if parent_tag.value not in content_file.tag_values:
-                            tags_which_each_content_file_misses[content_file.path].append(parent_tag.value)
-            if len(tags_which_each_content_file_misses[content_file.path]) > 0:
+                            content_file.missing_tag_values.append(parent_tag.value)
+            if len(content_file.missing_tag_values) > 0:
                 self._handle_content_import_exception(MissingParentTagValueException(
                     f"content file {content_file.path} misses the following tags: "
-                    f"{tags_which_each_content_file_misses[content_file.path]}"))
+                    f"{content_file.missing_tag_values}"))
 
         self._log_exceptions_summary()
         return self.content_validation_summary
