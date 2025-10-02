@@ -1,4 +1,5 @@
 import hashlib
+import os
 import re
 from pathlib import Path
 
@@ -61,11 +62,13 @@ class ContentFileService:
         return content_files
 
     def build_content_file(self, path: str, content_hash: str | None) -> ContentFile:
-        path_split: list[str] = path.split('/')
-        base_name: str = path_split[-1] if len(path_split) > 1 else path
+        dir_name: str = os.path.dirname(path)
+        base_name: str = os.path.basename(path)
+        base_name_without_extension, extension = os.path.splitext(base_name)
         tag_values: list[str] = self.sanitize_tags(path, base_name)
         result: ContentFile = ContentFile(
-            path=path, content_hash=content_hash, tag_values=tag_values, missing_tag_values=[])
+            dir_name=dir_name, base_name_without_extension=base_name_without_extension, extension=extension,
+            content_hash=content_hash, tag_values=tag_values, missing_tag_values=[])
         return result
 
     @staticmethod
