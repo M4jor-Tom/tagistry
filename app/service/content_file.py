@@ -1,8 +1,10 @@
 import hashlib
 import os
 import re
+from collections import defaultdict
 from pathlib import Path
 
+from fuzzywuzzy import fuzz
 from loguru import logger
 
 from exception import ContentImportException, FileNameWithoutSpacesException, UntaggedContentFileException, \
@@ -86,6 +88,22 @@ class ContentFileService:
                 sha256.update(chunk)
         return sha256.hexdigest()
 
+    @staticmethod
+    def group_similar_content_file_names(content_file_names: list[str], threshold: int):
+        groups = defaultdict(list)
+
+        for i, string1 in enumerate(content_file_names):
+            added_to_group = False
+            for group_id, group in groups.items():
+                if fuzz.ratio(string1, group[0]) >= threshold:
+                    group.append(string1)
+                    added_to_group = True
+                    break
+            if not added_to_group:
+                groups[len(groups)].append(string1)
+
+        return groups
+
     def _log_exceptions_summary(self):
         for exception_type in self.exceptions_summary:
             occurrences_list: list[ContentImportException] = self.exceptions_summary[exception_type]
@@ -131,4 +149,8 @@ class ContentFileService:
                     f"{content_file.missing_tag_values}"))
 
         self._log_exceptions_summary()
+        logger.info(ContentFileService.group_similar_content_file_names(
+            [file.base_name_without_extension for file in self.content_files],
+            50
+        ))
         return self.content_validation_summary
