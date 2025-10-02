@@ -18,3 +18,7 @@ class TagNotAllowedException(ContentImportException):
 class UntaggedContentFileException(ContentImportException):
     key = "untagged_content_file_names"
     reason = "content file is untagged"
+
+class MissingParentTagValueException(ContentImportException):
+    key = "missing_parent_tag"
+    reason = None

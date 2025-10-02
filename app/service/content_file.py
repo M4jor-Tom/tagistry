@@ -5,24 +5,21 @@ from pathlib import Path
 from loguru import logger
 
 from exception import ContentImportException, FileNameWithoutSpacesException, UntaggedContentFileException, \
-    TagNotAllowedException
-from model.domain import ContentFile
+    TagNotAllowedException, MissingParentTagValueException
+from model.domain import ContentFile, Tag
 from service import RuleSetService
 
 
 class ContentFileService:
-    content_files: list[ContentFile]
-    all_found_tags: set[str]
-    rule_set_service: RuleSetService
 
     def __init__(self, rule_set_service: RuleSetService):
-        self.content_files = []
-        self.all_found_tags = set()
+        self.content_files: list[ContentFile] = []
+        self.parsed_tag_values: set[str] = set()
         self.exceptions_summary = {}
-        self.content_validation_summary: dict[str, list[str]] = {}
-        self.rule_set_service = rule_set_service
+        self.content_validation_summary = {}
+        self.rule_set_service: RuleSetService = rule_set_service
 
-    def handle_content_import_exception(self, exception: ContentImportException):
+    def _handle_content_import_exception(self, exception: ContentImportException):
         exception_type: type[ContentImportException] = type(exception)
         if exception_type not in self.exceptions_summary:
             self.exceptions_summary[exception_type] = []
@@ -40,24 +37,25 @@ class ContentFileService:
         if len(tags) == 0:
             raise UntaggedContentFileException(path)
         for tag in tags:
-            self.all_found_tags.add(tag)
+            self.parsed_tag_values.add(tag)
         return tags
 
     def sanitize_all_content_files_tags(self) -> tuple[list[str], list[TagNotAllowedException]]:
-        allowed_tags: list[str] = []
-        tag_not_allowed_exceptions: list[TagNotAllowedException] = []
-        for found_tag in self.all_found_tags:
+        allowed_tag_values: list[str] = []
+        tag_value_not_allowed_exceptions: list[TagNotAllowedException] = []
+        for found_tag in self.parsed_tag_values:
             if found_tag in self.rule_set_service.get_tags_values():
-                allowed_tags.append(found_tag)
+                allowed_tag_values.append(found_tag)
             else:
-                tag_not_allowed_exceptions.append(TagNotAllowedException(found_tag))
-        return allowed_tags, tag_not_allowed_exceptions
+                tag_value_not_allowed_exceptions.append(TagNotAllowedException(found_tag))
+        return allowed_tag_values, tag_value_not_allowed_exceptions
 
     def build_content_file(self, path: str, content_hash: str | None) -> ContentFile:
         path_split: list[str] = path.split('/')
         base_name: str = path_split[-1] if len(path_split) > 1 else path
-        self.sanitize_tags(path, base_name)
-        return ContentFile(path=path, content_hash=content_hash)
+        tag_values: list[str] = self.sanitize_tags(path, base_name)
+        result: ContentFile = ContentFile(path=path, content_hash=content_hash, tag_values=tag_values)
+        return result
 
     @staticmethod
     def is_path_to_take(path: Path, banned_strips: tuple[str, ...]) -> bool:
@@ -74,7 +72,14 @@ class ContentFileService:
                 sha256.update(chunk)
         return sha256.hexdigest()
 
-    def input_content_file(
+    def _log_exceptions_summary(self):
+        for exception_type in self.exceptions_summary:
+            occurrences_list: list[ContentImportException] = self.exceptions_summary[exception_type]
+            logger.error("Refused {} paths for {}", len(occurrences_list), exception_type.reason)
+            for exception in occurrences_list:
+                logger.warning(exception.get_details())
+
+    def _input_content_file(
             self,
             stripped_str_content_file: str,
             content_file_path_object: Path,
@@ -96,18 +101,28 @@ class ContentFileService:
                     relative_file_split: list[str] = str(path).split(content_file_absolute_parent_dir)
                     if len(relative_file_split) == 2:
                         relative_path: str = relative_file_split[1]
-                        self.input_content_file(relative_path.lstrip('/'), path, compute_hash)
+                        self._input_content_file(relative_path.lstrip('/'), path, compute_hash)
             except ContentImportException as e:
-                self.handle_content_import_exception(e)
+                self._handle_content_import_exception(e)
 
-        allowed_tags, tag_not_allowed_exceptions = self.sanitize_all_content_files_tags()
+        allowed_tag_values, tag_value_not_allowed_exceptions = self.sanitize_all_content_files_tags()
 
-        for tag_not_allowed_exception in tag_not_allowed_exceptions:
-            self.handle_content_import_exception(tag_not_allowed_exception)
+        for tag_not_allowed_exception in tag_value_not_allowed_exceptions:
+            self._handle_content_import_exception(tag_not_allowed_exception)
 
-        for exception_type in self.exceptions_summary:
-            occurrences_list: list[ContentImportException] = self.exceptions_summary[exception_type]
-            logger.error("Refused {} paths for {}", len(occurrences_list), exception_type.reason)
-            for exception in occurrences_list:
-                logger.warning(exception.get_details())
+        tags_which_each_content_file_misses: dict[str, list[str]] = {}
+        for content_file in self.content_files:
+            tags_which_each_content_file_misses[content_file.path] = []
+            for content_file_tag_value in content_file.tag_values:
+                if content_file_tag_value in self.rule_set_service.tags:
+                    content_file_tag: Tag = self.rule_set_service.tags[content_file_tag_value]
+                    for parent_tag in content_file_tag.parent_tags:
+                        if parent_tag.value not in content_file.tag_values:
+                            tags_which_each_content_file_misses[content_file.path].append(parent_tag.value)
+            if len(tags_which_each_content_file_misses[content_file.path]) > 0:
+                self._handle_content_import_exception(MissingParentTagValueException(
+                    f"content file {content_file.path} misses the following tags: "
+                    f"{tags_which_each_content_file_misses[content_file.path]}"))
+
+        self._log_exceptions_summary()
         return self.content_validation_summary
