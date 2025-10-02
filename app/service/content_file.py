@@ -15,8 +15,8 @@ class ContentFileService:
     def __init__(self, rule_set_service: RuleSetService):
         self.content_files: list[ContentFile] = []
         self.parsed_tag_values: set[str] = set()
-        self.exceptions_summary = {}
-        self.content_validation_summary = {}
+        self.exceptions_summary: dict[type[ContentImportException], list[ContentImportException]] = {}
+        self.content_validation_summary: dict[str, list[str]] = {}
         self.rule_set_service: RuleSetService = rule_set_service
 
     def _handle_content_import_exception(self, exception: ContentImportException):
