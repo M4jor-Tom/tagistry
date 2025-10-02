@@ -50,6 +50,16 @@ class ContentFileService:
                 tag_value_not_allowed_exceptions.append(TagNotAllowedException(found_tag))
         return allowed_tag_values, tag_value_not_allowed_exceptions
 
+    def update_content_files_with_missing_parent_tags(self, content_files: list[ContentFile]):
+        for content_file in content_files:
+            for content_file_tag_value in content_file.tag_values:
+                if content_file_tag_value in self.rule_set_service.tags:
+                    content_file_tag: Tag = self.rule_set_service.tags[content_file_tag_value]
+                    for parent_tag in content_file_tag.parent_tags:
+                        if parent_tag.value not in content_file.tag_values:
+                            content_file.missing_tag_values.append(parent_tag.value)
+        return content_files
+
     def build_content_file(self, path: str, content_hash: str | None) -> ContentFile:
         path_split: list[str] = path.split('/')
         base_name: str = path_split[-1] if len(path_split) > 1 else path
@@ -111,13 +121,7 @@ class ContentFileService:
         for tag_not_allowed_exception in tag_value_not_allowed_exceptions:
             self._handle_content_import_exception(tag_not_allowed_exception)
 
-        for content_file in self.content_files:
-            for content_file_tag_value in content_file.tag_values:
-                if content_file_tag_value in self.rule_set_service.tags:
-                    content_file_tag: Tag = self.rule_set_service.tags[content_file_tag_value]
-                    for parent_tag in content_file_tag.parent_tags:
-                        if parent_tag.value not in content_file.tag_values:
-                            content_file.missing_tag_values.append(parent_tag.value)
+        for content_file in self.update_content_files_with_missing_parent_tags(self.content_files):
             if len(content_file.missing_tag_values) > 0:
                 self._handle_content_import_exception(MissingParentTagValueException(
                     f"content file {content_file.path} misses the following tags: "
