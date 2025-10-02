@@ -9,10 +9,10 @@ from model.domain import Tag
 
 
 class RuleSetService:
-    tags: list[Tag]
+    tags: dict[str, Tag]
 
     def __init__(self):
-        self.tags = []
+        self.tags = {}
 
     @staticmethod
     def build_rule_set_element_from_dir(rule_set_element_dir: str, banned_strips: tuple[str, ...]) -> dict[
@@ -73,7 +73,7 @@ class RuleSetService:
             raise InconsistentRuleSetCategoryInheritanceException(inconsistent_tags_with_intended_category)
 
     @staticmethod
-    def build_tags_from_dir(rule_set_dir: str, banned_strips: tuple[str, ...]) -> list[Tag]:
+    def build_tags_from_dir(rule_set_dir: str, banned_strips: tuple[str, ...]) -> dict[str, Tag]:
         tags: dict[str, Tag] = {}
         tags_categories: dict[str, list[str]] = RuleSetService.build_rule_set_element_from_dir(
             f"{rule_set_dir}/tags-categories",
@@ -87,7 +87,7 @@ class RuleSetService:
         tags = RuleSetService.build_tags_from_tags_categories(tags, tags_categories)
         tags = RuleSetService.sanitize_and_update_tags_from_tags_inheritances(tags, tags_inheritance)
         RuleSetService.sanitize_ruleset_consistency(tags, categories_inheritance)
-        return list(tags.values())
+        return tags
 
     def import_rule_set(self, rule_set_dir: str, banned_strips: tuple[str, ...]) -> None:
         try:
@@ -98,4 +98,4 @@ class RuleSetService:
 
     @cache
     def get_tags_values(self) -> list[str]:
-        return [rule_set_tag.value for rule_set_tag in self.tags]
+        return [rule_set_tag.value for rule_set_tag in self.tags.values()]

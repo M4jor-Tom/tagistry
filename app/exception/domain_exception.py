@@ -1,5 +1,5 @@
 class DomainException(Exception):
-    reason: str
+    reason: str | None
     key: str
     value: str
 
@@ -7,4 +7,6 @@ class DomainException(Exception):
         self.value = value
 
     def get_details(self) -> str:
+        if self.reason is None:
+            return self.value
         return f"{self.reason}: {self.value}"
