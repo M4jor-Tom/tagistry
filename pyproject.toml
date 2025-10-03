@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 [project]
 name = "app"
 version = "0.0.0"
-description = "An ETL service which consumes file paths to parse tag according to rules"
+description = ""
 authors = [{name = "Tom Vautray"}]
 
 [tool.poetry.dependencies]
