@@ -5,16 +5,16 @@ build-backend = "poetry.core.masonry.api"
 [project]
 authors = [{ name = "Tom Vautray" }]
 description = ""
-name = "app"
-version = "0.0.0"
+name = "fastapi_skeleton"
+version = "0.0.1-pre"
 readme = "README.md"
 requires-python = ">=3.12"
 
 [tool.poetry]
 authors = ["Tom Vautray"]
 description = ""
-name = "app"
-version = "0.0.0"
+name = "fastapi_skeleton"
+version = "0.0.1-pre"
 packages = [{ include = "app" }]
 
 [tool.poetry.dependencies]
