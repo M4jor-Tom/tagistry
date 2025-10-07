@@ -85,7 +85,7 @@ COPY app/ ./app
 
 # Adjust ownership
 RUN chown -R app:app /app
-USER app
+# USER app
 
 # Networking / config
 EXPOSE 8000
