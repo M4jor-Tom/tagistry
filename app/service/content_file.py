@@ -109,6 +109,10 @@ class ContentFileService:
                             banned_strips: tuple[str, ...],
                             compute_hash: bool
                             ) -> dict[str, list[str]]:
+        self.content_files = []
+        self.parsed_tag_values.clear()
+        self.exceptions_summary = {}
+        self.content_validation_summary = {}
         for path in Path(content_file_absolute_parent_dir).rglob("*"):
             try:
                 if ContentFileService.is_path_to_take(path, banned_strips):
