@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
-from model.persistence import TagJsonModel
+from model.persistence import TagJsonObject
 
 
 class Tag(BaseModel):
@@ -18,8 +18,8 @@ class Tag(BaseModel):
                 return True
         return False
 
-    def to_file_json(self) -> TagJsonModel:
-        return TagJsonModel(
+    def to_file_json(self) -> TagJsonObject:
+        return TagJsonObject(
             category=self.category,
             value=self.value,
             parent_tags_names=[parent_tag.value for parent_tag in self.parent_tags]

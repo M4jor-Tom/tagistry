@@ -4,12 +4,14 @@ from pathlib import Path
 from loguru import logger
 
 from exception import RuleSetElementPathDoesNotExist, InconsistentRuleSetCategoryInheritanceException, \
-    RuleSetImportException, InheritanceTagsAbsentFromCategoriesTagsException
+    RuleSetImportException, InheritanceTagsAbsentFromCategoriesTagsException, TagJsonObjectInheritsFromNonExistentTag
 from model.domain import Tag
+from model.persistence import TagJsonObject
 
 
 class RuleSetService:
     tags: dict[str, Tag]
+    tag_file_exceptions: list[RuleSetImportException] = []
 
     def __init__(self):
         self.tags = {}
@@ -95,6 +97,37 @@ class RuleSetService:
             self.tags = RuleSetService.build_tags_from_dir(rule_set_dir, banned_strips)
         except RuleSetImportException as e:
             logger.warning(e.get_details())
+
+    def build_tag_from_tags_json_objects(self, tag: TagJsonObject, tags: dict[str, TagJsonObject]) -> Tag:
+        if tag.value in self.tags:
+            return self.tags[tag.value]
+        for parent_tag_name in tag.parent_tags_names:
+            if parent_tag_name not in tags:
+                self.tag_file_exceptions.append(TagJsonObjectInheritsFromNonExistentTag(
+                    non_existent_parent_tag_value=parent_tag_name, tag_value_with_parent_error=tag.value))
+        new_tag: Tag = Tag(
+            value=tag.value,
+            category=tag.category,
+            parent_tags=[self.build_tag_from_tags_json_objects(tags[parent_tag_name], tags) for
+                         parent_tag_name in tag.parent_tags_names if parent_tag_name in tags]
+        )
+        self.tags[tag.value] = new_tag
+        return new_tag
+
+    def build_tags_from_tags_json_objects(self, tags: list[TagJsonObject]) -> list[Tag]:
+        result: list[Tag] = []
+        for tag_json_object in tags:
+            result.append(self.build_tag_from_tags_json_objects(tag_json_object, {tag.value: tag for tag in tags}))
+        return result
+
+    def import_rule_set_by_tags(self, rule_set_file_content: str) -> dict[str, Tag]:
+        self.tags = {}
+        self.tag_file_exceptions = []
+        tags: list[TagJsonObject] = [TagJsonObject.model_validate(item) for item in rule_set_file_content]
+        self.tags = {tag.value: tag for tag in self.build_tags_from_tags_json_objects(tags)}
+        for tag_file_exception in self.tag_file_exceptions:
+            logger.warning(tag_file_exception.get_details())
+        return self.tags
 
     @cache
     def get_tags_values(self) -> list[str]:

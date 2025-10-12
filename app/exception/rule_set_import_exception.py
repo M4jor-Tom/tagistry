@@ -30,3 +30,9 @@ class InconsistentRuleSetCategoryInheritanceException(RuleSetImportException):
 
 class InheritanceTagsAbsentFromCategoriesTagsException(RuleSetImportException):
     reason = "in inheritance dir, found tags absent from category dir"
+
+class TagJsonObjectInheritsFromNonExistentTag(RuleSetImportException):
+    reason = "non existent parent tag found"
+
+    def __init__(self, tag_value_with_parent_error: str, non_existent_parent_tag_value: str):
+        self.value = f"'{tag_value_with_parent_error}' with non existent parent '{non_existent_parent_tag_value}'"
