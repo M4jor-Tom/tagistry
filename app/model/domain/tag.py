@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
+from model.persistence import TagJsonModel
+
 
 class Tag(BaseModel):
     category: str
@@ -15,3 +17,10 @@ class Tag(BaseModel):
             if parent_tag.inherits_of(tag):
                 return True
         return False
+
+    def to_file_json(self) -> TagJsonModel:
+        return TagJsonModel(
+            category=self.category,
+            value=self.value,
+            parent_tags_names=[parent_tag.value for parent_tag in self.parent_tags]
+        )
